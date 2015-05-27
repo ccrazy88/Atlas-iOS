@@ -35,9 +35,9 @@
 @implementation ATLConversationCollectionViewFooter
 
 NSString *const ATLConversationViewFooterIdentifier = @"ATLConversationViewFooterIdentifier";
-CGFloat const ATLConversationViewFooterTopPadding = 2;
-CGFloat const ATLConversationViewFooterEmptyHeight = 1;
-CGFloat const ATLConversationViewFooterUnClusteredPadding = 7;
+CGFloat const ATLConversationViewFooterTopPadding = 3.f;
+CGFloat const ATLConversationViewFooterEmptyHeight = 1.f;
+CGFloat const ATLConversationViewFooterUnClusteredPadding = 5.f;
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -85,9 +85,10 @@ CGFloat const ATLConversationViewFooterUnClusteredPadding = 7;
 + (CGFloat)footerHeightWithRecipientStatus:(NSAttributedString *)recipientStatus clustered:(BOOL)clustered
 {
     CGFloat height = ATLConversationViewFooterEmptyHeight;
-    if (!clustered) {
-        height += ATLConversationViewFooterUnClusteredPadding;
-    }
+    // Uncluster everything!
+    // if (!clustered) {
+    height += ATLConversationViewFooterUnClusteredPadding;
+    // }
     if (!recipientStatus.length) {
         return height;
     }

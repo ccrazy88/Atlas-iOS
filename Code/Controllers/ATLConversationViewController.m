@@ -382,6 +382,13 @@ static NSInteger const ATLPhotoActionSheet = 1000;
     }
     BOOL shouldClusterMessage = [self shouldClusterMessageAtSection:section];
     CGFloat height = [ATLConversationCollectionViewFooter footerHeightWithRecipientStatus:readReceipt clustered:shouldClusterMessage];
+    if (!readReceipt) {
+        NSInteger lastQueryControllerRow = [self.conversationDataSource.queryController numberOfObjectsInSection:0] - 1;
+        NSInteger lastSection = [self.conversationDataSource collectionViewSectionForQueryControllerRow:lastQueryControllerRow];
+        if (section == lastSection) {
+            height += 6.0f;
+        }
+    }
     return CGSizeMake(0, height);
 }
 
@@ -531,13 +538,11 @@ static NSInteger const ATLPhotoActionSheet = 1000;
     if (message.sender.userID == nil) {
         return NO;
     }
-    
+
     if ([message.sender.userID isEqualToString:self.layerClient.authenticatedUserID] && !self.shouldDisplayAvatarItemForAuthenticatedUser) {
         return NO;
     }
-    if (![self shouldClusterMessageAtSection:indexPath.section] && self.avatarItemDisplayFrequency == ATLAvatarItemDisplayFrequencyCluster) {
-        return YES;
-    }
+
     NSInteger lastQueryControllerRow = [self.conversationDataSource.queryController numberOfObjectsInSection:0] - 1;
     NSInteger lastSection = [self.conversationDataSource collectionViewSectionForQueryControllerRow:lastQueryControllerRow];
     if (indexPath.section < lastSection) {
