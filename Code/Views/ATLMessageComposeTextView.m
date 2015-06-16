@@ -86,10 +86,15 @@ static NSString *const ATLPlaceholderText = @"Enter Message";
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
-    if (self.overrideNextResponder != nil)
+    if (self.overrideNextResponder != nil) {
         return NO;
-    else
+    } else if (action == @selector(paste:) &&
+        [UIPasteboard generalPasteboard].images &&
+        [[UIPasteboard generalPasteboard].images count] > 0) {
+        return false;
+    } else {
         return [super canPerformAction:action withSender:sender];
+    }
 }
 
 - (UIResponder *)nextResponder

@@ -180,6 +180,8 @@ static CGFloat const ATLButtonHeight = 28.0f;
     }
 }
 
+// Disable paste for images
+/*
 - (void)paste:(id)sender
 {
     NSData *imageData = [[UIPasteboard generalPasteboard] dataForPasteboardType:ATLPasteboardImageKey];
@@ -191,6 +193,7 @@ static CGFloat const ATLButtonHeight = 28.0f;
         [self insertMediaAttachment:mediaAttachment withEndLineBreak:YES];
     }
 }
+*/
 
 #pragma mark - Public Methods
 
