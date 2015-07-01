@@ -37,7 +37,7 @@
     self.view.userInteractionEnabled = NO;
     self.view.translatesAutoresizingMaskIntoConstraints = NO;
     self.view.alpha = 0.0;
-    
+
     _backgroundGradientLayer = [CAGradientLayer layer];
     _backgroundGradientLayer.frame = self.view.bounds;
     _backgroundGradientLayer.startPoint = CGPointZero;
@@ -48,7 +48,7 @@
                                         (id)[UIColor colorWithWhite:1.0 alpha:1.0].CGColor
                                         ];
     [self.view.layer addSublayer:_backgroundGradientLayer];
-    
+
     _label = [[UILabel alloc] init];
     _label.translatesAutoresizingMaskIntoConstraints = NO;
     _label.font = ATLMediumFont(12);
@@ -56,7 +56,7 @@
     _label.numberOfLines = 1;
     _label.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:_label];
-    
+
     [self configureToLabelConstraints];
 }
 
@@ -81,26 +81,26 @@
     if (!participantsCount) {
         return nil;
     }
-    
+
     NSMutableArray *fullNameComponents = [[[participants valueForKey:@"fullName"] allObjects] mutableCopy];
     NSString *fullNamesText = [self typingIndicatorTextWithParticipantStrings:fullNameComponents participantsCount:participantsCount];
     if ([self typingIndicatorLabelHasSpaceForText:fullNamesText]) {
         return fullNamesText;
     }
-    
+
     NSArray *firstNames = [[participants valueForKey:@"firstName"] allObjects];
     NSMutableArray *firstNameComponents = [firstNames mutableCopy];
     NSString *firstNamesText = [self typingIndicatorTextWithParticipantStrings:firstNameComponents participantsCount:participantsCount];
     if ([self typingIndicatorLabelHasSpaceForText:firstNamesText]) {
         return firstNamesText;
     }
-    
+
     NSMutableArray *strings = [NSMutableArray new];
     for (NSInteger displayedFirstNamesCount = participants.count; displayedFirstNamesCount >= 0; displayedFirstNamesCount--) {
         NSRange displayedRange = NSMakeRange(0, displayedFirstNamesCount);
         NSArray *displayedFirstNames = [firstNames subarrayWithRange:displayedRange];
         [strings addObjectsFromArray:displayedFirstNames];
-        
+
         NSUInteger undisplayedCount = participantsCount - displayedRange.length;
         NSMutableString *textForUndisplayedParticipants = [NSMutableString new];
         [textForUndisplayedParticipants appendFormat:@"%ld", (unsigned long)undisplayedCount];
@@ -110,7 +110,7 @@
             [textForUndisplayedParticipants appendString:ATLLocalizedString(@"atl.typingindicator.spaces.others.key", @" others", nil)];
         }
         [strings addObject:textForUndisplayedParticipants];
-        
+
         NSString *proposedSummary = [self typingIndicatorTextWithParticipantStrings:strings participantsCount:participantsCount];
         if ([self typingIndicatorLabelHasSpaceForText:proposedSummary]) {
             return proposedSummary;
@@ -169,6 +169,7 @@
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_label attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeLeft multiplier:1.0 constant:8]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_label attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1.0 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_label attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_label attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeBottom multiplier:1.0 constant:-4]];
     NSLayoutConstraint *rightConstraint = [NSLayoutConstraint constraintWithItem:_label attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeRight multiplier:1.0 constant:-8];
     rightConstraint.priority = 800;
     [self.view addConstraint:rightConstraint];
