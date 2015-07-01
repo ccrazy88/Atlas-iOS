@@ -22,8 +22,13 @@
 
 @interface ATLAvatarImageView ()
 
+@property (nonatomic) UIImageView *imageView;
 @property (nonatomic) UILabel *initialsLabel;
-@property (nonatomic) NSURLSessionDownloadTask *downloadTask;
+
+@property (nonatomic, strong) NSLayoutConstraint *imageHeightConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *imageWidthConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *labelHeightConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *labelWidthConstraint;
 
 @end
 
@@ -31,25 +36,12 @@
 
 NSString *const ATLAvatarImageViewAccessibilityLabel = @"ATLAvatarImageViewAccessibilityLabel";
 
-
-+ (NSCache *)sharedImageCache
-{
-    static NSCache *_sharedImageCache;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _sharedImageCache = [NSCache new];
-    });
-    return _sharedImageCache;
-}
-
-+ (void)initialize
-{
++ (void)initialize {
     ATLAvatarImageView *proxy = [self appearance];
     proxy.backgroundColor = ATLLightGrayColor();
 }
 
-- (id)init
-{
+- (id)init {
     self = [super init];
     if (self) {
         [self lyr_commonInit];
@@ -57,8 +49,7 @@ NSString *const ATLAvatarImageViewAccessibilityLabel = @"ATLAvatarImageViewAcces
     return self;
 }
 
-- (id)initWithCoder:(NSCoder *)aDecoder
-{
+- (id)initWithCoder:(NSCoder *)aDecoder {
     self = [super initWithCoder:aDecoder];
     if (self) {
         [self lyr_commonInit];
@@ -66,140 +57,154 @@ NSString *const ATLAvatarImageViewAccessibilityLabel = @"ATLAvatarImageViewAcces
     return self;
 }
 
-- (void)lyr_commonInit
-{
+- (void)lyr_commonInit {
     // Default UI Appearance
     _initialsFont = [UIFont systemFontOfSize:14];
     _initialsColor = [UIColor blackColor];
     _avatarImageViewDiameter = 27;
-    
+
+    self.accessibilityLabel = ATLAvatarImageViewAccessibilityLabel;
     self.clipsToBounds = YES;
     self.layer.cornerRadius = _avatarImageViewDiameter / 2;
-    self.contentMode = UIViewContentModeScaleAspectFill;
-    self.accessibilityLabel = ATLAvatarImageViewAccessibilityLabel;
-    
+    self.opaque = YES;
+
+    _imageView = [[UIImageView alloc] init];
+    _imageView.contentMode = UIViewContentModeScaleAspectFill;
+    _imageView.opaque = YES;
+    [self addSubview:_imageView];
+
     _initialsLabel = [[UILabel alloc] init];
-    _initialsLabel.translatesAutoresizingMaskIntoConstraints = NO;
     _initialsLabel.textAlignment = NSTextAlignmentCenter;
-    _initialsLabel.adjustsFontSizeToFitWidth = YES;
-    _initialsLabel.minimumScaleFactor = 0.75;
     _initialsLabel.textColor = _initialsColor;
     _initialsLabel.font = _initialsFont;
+    _initialsLabel.opaque = YES;
     [self addSubview:_initialsLabel];
-    [self configureInitialsLabelConstraint];
+
+    [self configureConstraints];
 }
 
-- (CGSize)intrinsicContentSize
-{
+- (void)resetView {
+    self.avatarItem = nil;
+    self.imageView.image = nil;
+    self.imageView.hidden = YES;
+    self.initialsLabel.text = nil;
+    self.initialsLabel.hidden = YES;
+}
+
+- (CGSize)intrinsicContentSize {
     return CGSizeMake(self.avatarImageViewDiameter, self.avatarImageViewDiameter);
 }
 
-- (void)resetView
-{
-    self.avatarItem = nil;
-    self.image = nil;
-    self.initialsLabel.text = nil;
-    [self.downloadTask cancel];
-}
-
-- (void)dealloc
-{
-    [self.downloadTask cancel];
-}
-
-- (void)setAvatarItem:(id<ATLAvatarItem>)avatarItem
-{
-    if ([avatarItem avatarImageURL]) {
+- (void)setAvatarItem:(id<ATLAvatarItem>)avatarItem {
+    if (avatarItem.avatarImage) {
         self.initialsLabel.text = nil;
-        [self loadAvatarImageWithURL:[avatarItem avatarImageURL]];
-    } else if (avatarItem.avatarImage) {
-        self.initialsLabel.text = nil;
-        self.image = avatarItem.avatarImage;
-    } else if (avatarItem.avatarInitials) {
-        self.image = nil;
+        self.initialsLabel.hidden = YES;
+        self.imageView.image = avatarItem.avatarImage;
+        self.imageView.hidden = NO;
+    } else {
+        self.imageView.image = nil;
+        self.imageView.hidden = YES;
         self.initialsLabel.text = avatarItem.avatarInitials;
+        self.initialsLabel.hidden = NO;
     }
+
     _avatarItem = avatarItem;
 }
 
-- (void)setInitialsColor:(UIColor *)initialsColor
-{
+- (void)setInitialsColor:(UIColor *)initialsColor {
     self.initialsLabel.textColor = initialsColor;
     _initialsColor = initialsColor;
 }
 
-- (void)setInitialsFont:(UIFont *)initialsFont
-{
+- (void)setInitialsFont:(UIFont *)initialsFont {
     self.initialsLabel.font = initialsFont;
     _initialsFont = initialsFont;
 }
 
-- (void)setAvatarImageViewDiameter:(CGFloat)avatarImageViewDiameter
-{
+- (void)setAvatarImageViewDiameter:(CGFloat)avatarImageViewDiameter {
     self.layer.cornerRadius = avatarImageViewDiameter / 2;
     _avatarImageViewDiameter = avatarImageViewDiameter;
+    self.imageHeightConstraint.constant = avatarImageViewDiameter;
+    self.imageWidthConstraint.constant = avatarImageViewDiameter;
+    self.labelHeightConstraint.constant = avatarImageViewDiameter;
+    self.labelWidthConstraint.constant = avatarImageViewDiameter;
     [self invalidateIntrinsicContentSize];
 }
 
-- (void)setImageViewBackgroundColor:(UIColor *)imageViewBackgroundColor
-{
+- (void)setImageViewBackgroundColor:(UIColor *)imageViewBackgroundColor {
     self.backgroundColor = imageViewBackgroundColor;
     _imageViewBackgroundColor = imageViewBackgroundColor;
 }
-         
-- (void)loadAvatarImageWithURL:(NSURL *)imageURL
-{
-    if (![imageURL isKindOfClass:[NSURL class]] || imageURL.absoluteString.length == 0) {
-        NSLog(@"Cannot fetch image without URL");
-        return;
-    }
-    
-    // Check if image is in cache
-    __block NSString *stringURL = imageURL.absoluteString;
-    UIImage *image = [[[self class] sharedImageCache] objectForKey:stringURL];
-    if (image) {
-        self.image = image;
-        return;
-    }
-    
-    // If not, fetch the image and add to the cache
-    [self fetchImageFromRemoteImageURL:imageURL];
+
+- (void)configureConstraints {
+    _imageHeightConstraint = [NSLayoutConstraint constraintWithItem:self.imageView
+                                                          attribute:NSLayoutAttributeHeight
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:nil
+                                                          attribute:NSLayoutAttributeNotAnAttribute
+                                                         multiplier:1.0f
+                                                           constant:_avatarImageViewDiameter];
+    _imageWidthConstraint = [NSLayoutConstraint constraintWithItem:self.imageView
+                                                         attribute:NSLayoutAttributeWidth
+                                                         relatedBy:NSLayoutRelationEqual
+                                                            toItem:nil
+                                                         attribute:NSLayoutAttributeNotAnAttribute
+                                                        multiplier:1.0f
+                                                          constant:_avatarImageViewDiameter];
+    _labelHeightConstraint = [NSLayoutConstraint constraintWithItem:self.initialsLabel
+                                                          attribute:NSLayoutAttributeHeight
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:nil
+                                                          attribute:NSLayoutAttributeNotAnAttribute
+                                                         multiplier:1.0f
+                                                           constant:_avatarImageViewDiameter];
+    _labelWidthConstraint = [NSLayoutConstraint constraintWithItem:self.initialsLabel
+                                                         attribute:NSLayoutAttributeWidth
+                                                         relatedBy:NSLayoutRelationEqual
+                                                            toItem:nil
+                                                         attribute:NSLayoutAttributeNotAnAttribute
+                                                        multiplier:1.0f
+                                                          constant:_avatarImageViewDiameter];
+
+    NSArray *constraints = @[
+                             [NSLayoutConstraint constraintWithItem:self.imageView
+                                                          attribute:NSLayoutAttributeCenterX
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:self
+                                                          attribute:NSLayoutAttributeCenterX
+                                                         multiplier:1.0f
+                                                           constant:0.0f],
+                             [NSLayoutConstraint constraintWithItem:self.imageView
+                                                          attribute:NSLayoutAttributeCenterY
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:self
+                                                          attribute:NSLayoutAttributeCenterY
+                                                         multiplier:1.0f
+                                                           constant:0.0f],
+                             _imageHeightConstraint,
+                             _imageWidthConstraint,
+                             [NSLayoutConstraint constraintWithItem:self.initialsLabel
+                                                          attribute:NSLayoutAttributeCenterX
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:self
+                                                          attribute:NSLayoutAttributeCenterX
+                                                         multiplier:1.0f
+                                                           constant:0.0f],
+                             [NSLayoutConstraint constraintWithItem:self.initialsLabel
+                                                          attribute:NSLayoutAttributeCenterY
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:self
+                                                          attribute:NSLayoutAttributeCenterY
+                                                         multiplier:1.0f
+                                                           constant:0.0f],
+                             _labelHeightConstraint,
+                             _labelWidthConstraint,
+                             ];
+
+    [self.imageView setTranslatesAutoresizingMaskIntoConstraints:NO];
+    [self.initialsLabel setTranslatesAutoresizingMaskIntoConstraints:NO];
+
+    [NSLayoutConstraint activateConstraints:constraints];
 }
 
-- (void)fetchImageFromRemoteImageURL:(NSURL *)remoteImageURL
-{
-    self.downloadTask = [[NSURLSession sharedSession] downloadTaskWithURL:remoteImageURL completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
-        if (!error && location) {
-            __block UIImage *image = [UIImage imageWithData:[NSData dataWithContentsOfURL:location]];
-            if (image) {
-                [[[self class] sharedImageCache] setObject:image forKey:remoteImageURL.absoluteString cost:0];
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self updateWithImage:image forRemoteImageURL:remoteImageURL];
-                });
-            }
-        }
-    }];
-    [self.downloadTask resume];
-}
-
-- (void)updateWithImage:(UIImage *)image forRemoteImageURL:(NSURL *)remoteImageURL;
-{
-    [UIView animateWithDuration:0.2 animations:^{
-        self.alpha = 0.0;
-    } completion:^(BOOL finished) {
-        [UIView animateWithDuration:0.5 animations:^{
-            self.image = image;
-            self.alpha = 1.0;
-        }];
-    }];
-}
-
-- (void)configureInitialsLabelConstraint
-{
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.initialsLabel attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeLeft multiplier:1.0 constant:3]];
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.initialsLabel attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeRight multiplier:1.0 constant:-3]];
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.initialsLabel attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTop multiplier:1.0 constant:3]];
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.initialsLabel attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1.0 constant:-3]];
-}
-    
 @end

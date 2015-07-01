@@ -27,7 +27,7 @@ extern CGFloat const ATLAvatarImageDiameter;
  @abstract The `ATLAvatarImageView` displays a circular avatar image representing a participant in a conversation. 
  If no image is present, the image view can optionally display initials for a participant.
  */
-@interface ATLAvatarImageView : UIImageView
+@interface ATLAvatarImageView : UIView
 
 /**
  @abstract An object conforming to the `ATLAvatarItem` protocol. 
