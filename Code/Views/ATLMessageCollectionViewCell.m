@@ -98,7 +98,7 @@ NSInteger const kATLSharedCellTag = 1000;
     _messageTextFont = [UIFont systemFontOfSize:17];
     _messageTextColor = [UIColor blackColor];
     _messageLinkTextColor = [UIColor whiteColor];
-    _messageTextCheckingTypes = NSTextCheckingTypeLink;
+    _messageTextCheckingTypes = NSTextCheckingTypeAddress | NSTextCheckingTypeLink | NSTextCheckingTypePhoneNumber;
     _bubbleViewColor = ATLBlueColor();
     _bubbleViewCornerRadius = 17.0f;
     

@@ -31,7 +31,6 @@ CGFloat const ATLMessageBubbleMapHeight = 200.0f;
 CGFloat const ATLMessageBubbleDefaultHeight = 40.0f;
 
 NSString *const ATLUserDidTapLinkNotification = @"ATLUserDidTapLinkNotification";
-NSString *const ATLUserDidTapPhoneNumberNotification = @"ATLUserDidTapPhoneNumberNotification";
 
 typedef NS_ENUM(NSInteger, ATLBubbleViewContentType) {
     ATLBubbleViewContentTypeText,
@@ -49,7 +48,7 @@ typedef NS_ENUM(NSInteger, ATLBubbleViewContentType) {
 @property (nonatomic) UITapGestureRecognizer *tapGestureRecognizer;
 @property (nonatomic) UIPanGestureRecognizer *panGestureRecognizer;
 @property (nonatomic) UILongPressGestureRecognizer *longPressGestureRecognizer;
-@property (nonatomic) NSURL *tappedURL;
+@property (nonatomic) NSTextCheckingResult *tappedResult;
 @property (nonatomic) NSLayoutConstraint *imageWidthConstraint;
 @property (nonatomic) MKMapSnapshotter *snapshotter;
 @property (nonatomic) ATLProgressView *progressView;
@@ -84,19 +83,19 @@ typedef NS_ENUM(NSInteger, ATLBubbleViewContentType) {
         [_bubbleViewLabel setContentCompressionResistancePriority:UILayoutPriorityDefaultHigh + 1 forAxis:UILayoutConstraintAxisHorizontal];
         [self addSubview:_bubbleViewLabel];
         
-        _textCheckingTypes = NSTextCheckingTypeLink;
-        
+        _textCheckingTypes = NSTextCheckingTypeAddress | NSTextCheckingTypeLink | NSTextCheckingTypePhoneNumber;
+
         _bubbleImageView = [[UIImageView alloc] init];
         _bubbleImageView.translatesAutoresizingMaskIntoConstraints = NO;
         _bubbleImageView.contentMode = UIViewContentModeScaleAspectFill;
         [self addSubview:_bubbleImageView];
-        
+
         _playView = [[ATLPlayView alloc]initWithFrame:CGRectMake(0,0, 128.0f, 128.0f)];
         _playView.translatesAutoresizingMaskIntoConstraints = NO;
         _playView.backgroundColor = [UIColor clearColor];
         _playView.hidden = YES;
         [self addSubview:_playView];
-        
+
         _progressView = [[ATLProgressView alloc] initWithFrame:CGRectMake(0, 0, 128.0f, 128.0f)];
         _progressView.translatesAutoresizingMaskIntoConstraints = NO;
         _progressView.alpha = 1.0f;
@@ -414,15 +413,10 @@ typedef NS_ENUM(NSInteger, ATLBubbleViewContentType) {
     NSArray *results = ATLTextCheckingResultsForText(self.bubbleViewLabel.attributedText.string, self.textCheckingTypes);
     for (NSTextCheckingResult *result in results) {
         if (NSLocationInRange(characterIndex, result.range)) {
-            if (result.resultType == NSTextCheckingTypeLink && self.textCheckingTypes & NSTextCheckingTypeLink) {
-                self.tappedURL = result.URL;
-                return YES;
-            } else if (result.resultType == NSTextCheckingTypePhoneNumber && self.textCheckingTypes & NSTextCheckingTypePhoneNumber) {
-                self.tappedPhoneNumber = result.phoneNumber;
+            if (result.resultType & self.textCheckingTypes) {
+                self.tappedResult = result;
                 return YES;
             }
-            self.tappedURL = result.URL;
-            return YES;
         }
     }
     return NO;
@@ -443,14 +437,9 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
 
 - (void)handleLabelTap:(UITapGestureRecognizer *)tapGestureRecognizer
 {
-    if (self.tappedURL) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:ATLUserDidTapLinkNotification object:self.tappedURL];
-        self.tappedURL = nil;
-    }
-    
-    if (self.tappedPhoneNumber) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:ATLUserDidTapPhoneNumberNotification object:self.tappedPhoneNumber];
-        self.tappedURL = nil;
+    if (self.tappedResult) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:ATLUserDidTapLinkNotification object:self.tappedResult];
+        self.tappedResult = nil;
     }
 }
 
