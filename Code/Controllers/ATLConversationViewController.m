@@ -224,6 +224,9 @@ static NSInteger const ATLPhotoActionSheet = 1000;
         [self fetchLayerMessages];
     } else {
         self.conversationDataSource = nil;
+        self.queryController.delegate = nil;
+        self.queryController = nil;
+        self.showingMoreMessagesIndicator = NO;
         [self.collectionView reloadData];
     }
     CGSize contentSize = self.collectionView.collectionViewLayout.collectionViewContentSize;
