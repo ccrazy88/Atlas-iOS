@@ -19,7 +19,7 @@
 //
 
 #import <Foundation/Foundation.h>
-@import LayerKit;
+#import <LayerKit/LayerKit.h>
 
 @interface ATLDataSourceChange : NSObject
 
